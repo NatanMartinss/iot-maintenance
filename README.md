@@ -46,9 +46,15 @@ flowchart LR
 - Degradation follows a fixed 21-day exponential curve; time is compressed.
 
 ### Not built yet (roadmap)
+- [ ] Hybrid detector: per-sensor physical limits alongside the Isolation Forest (fixes single-sensor drift)
 - [ ] MQTT broker, InfluxDB and Airflow running live on this server
 - [ ] Validation on a public bearing dataset (e.g. NASA IMS / CWRU)
 - [ ] Grafana dashboard
+
+## Known limitations
+
+- **Single-sensor drift is diluted.** Overheating only moves the temperature feature. Isolation Forest picks split values inside the range it saw during training, so any temperature above that maximum lands in the same branches and the anomaly score saturates (74 °C and 200 °C score the same). In practice the model alerts before the classic temperature alarm in only a minority of overheating runs. The test suite documents this instead of hiding it. The fix (physical per-sensor limits or a robust z-score alongside the model) is on the roadmap.
+- The alert threshold is calibrated on the same healthy windows used for `fit`, which is optimistic; a held-out healthy set is the right way.
 
 ## Repository layout
 

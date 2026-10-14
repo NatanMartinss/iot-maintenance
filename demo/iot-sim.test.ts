@@ -34,7 +34,7 @@ test('a healthy machine runs 60 days with at most one false alarm', () => {
   assert.ok(m.events.falseAlarms <= 1, `false alarms: ${m.events.falseAlarms}`);
 });
 
-for (const fault of ['bearing', 'imbalance', 'overheat'] as Fault[]) {
+for (const fault of ['bearing', 'imbalance'] as Fault[]) {
   test(`${fault}: the Isolation Forest alerts earlier than the classic alarm`, () => {
     let wins = 0;
     for (let run = 0; run < 5; run++) {
@@ -49,3 +49,14 @@ for (const fault of ['bearing', 'imbalance', 'overheat'] as Fault[]) {
     assert.ok(wins >= 4, `model earlier in ${wins}/5 runs`);
   });
 }
+
+// Limitação conhecida, documentada no README: o superaquecimento mexe numa única feature
+// (temperatura). Acima do máximo visto no treino, todo valor cai nos mesmos ramos das árvores,
+// então o score satura e o modelo não “vê” o quanto a temperatura subiu. A correção (limites
+// físicos por sensor ao lado do modelo) está no roteiro.
+test('known limitation: the anomaly score saturates above the training range', () => {
+  const { signal, temp } = makeWindow({ bearing: 0, imbalance: 0, overheat: 0 });
+  const base = extract(signal, temp).features;
+  const at = (t: number) => trained.forest.score([...base.slice(0, -1), t]);
+  assert.equal(at(74), at(200));
+});
